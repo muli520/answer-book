@@ -272,7 +272,6 @@ fun AnswerBookApp() {
         SettingsSheet(
             visible = settingsOpen,
             config = settings.config,
-            updateConfig = settings.updateConfig,
             currentVersion = BuildConfig.VERSION_NAME,
             backdrop = backdrop,
             onDismiss = { settingsOpen = false },
@@ -281,7 +280,6 @@ fun AnswerBookApp() {
                 askError = null
                 settingsOpen = false
             },
-            onSaveUpdate = settings::saveUpdate,
             onClearKey = { settings.clearKey() }
         )
     }

@@ -18,23 +18,6 @@ import javax.net.ssl.SSLException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-enum class UpdateProvider(val label: String) {
-    GITHUB("GitHub"),
-    GITEE("Gitee")
-}
-
-data class UpdateConfig(
-    val provider: UpdateProvider = UpdateProvider.GITHUB,
-    val repository: String = ""
-) {
-    val isConfigured: Boolean
-        get() = REPOSITORY_PATTERN.matches(repository.trim())
-
-    companion object {
-        private val REPOSITORY_PATTERN = Regex("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
-    }
-}
-
 data class UpdateInfo(
     val versionLabel: String,
     val notes: String,
@@ -50,10 +33,10 @@ sealed interface UpdateResult {
 class UpdateException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /**
- * 检查 GitHub / Gitee 的 latest release。
+ * 只检查内置的 GitHub 仓库，地址不在界面上暴露。
  *
- * 只读取公开仓库的 Release，不涉及任何 API Key。
- * 有 APK 资产时返回直链；没有时仍然返回 Release 页面。
+ * 读取公开仓库的 latest release；有 APK 资产时返回直链，
+ * 没有时返回 Release 页面。不涉及任何 API Key。
  */
 class UpdateChecker {
 
@@ -63,27 +46,10 @@ class UpdateChecker {
         .callTimeout(25, TimeUnit.SECONDS)
         .build()
 
-    suspend fun check(
-        config: UpdateConfig,
-        currentVersion: String
-    ): UpdateResult {
-        if (!config.isConfigured) {
-            throw UpdateException("请先填写 owner/repo，例如 your-name/answer-book。")
-        }
-
-        val repository = config.repository.trim().trim('/')
-        val url = when (config.provider) {
-            UpdateProvider.GITHUB -> "https://api.github.com/repos/" + repository + "/releases/latest"
-            UpdateProvider.GITEE -> "https://gitee.com/api/v5/repos/" + repository + "/releases/latest"
-        }
-
+    suspend fun check(currentVersion: String): UpdateResult {
         val request = Request.Builder()
-            .url(url)
-            .header("Accept", if (config.provider == UpdateProvider.GITHUB) {
-                "application/vnd.github+json"
-            } else {
-                "application/json"
-            })
+            .url("https://api.github.com/repos/" + REPOSITORY + "/releases/latest")
+            .header("Accept", "application/vnd.github+json")
             .header("User-Agent", "AnswerBook-Android")
             .get()
             .build()
@@ -91,7 +57,7 @@ class UpdateChecker {
         return withContext(Dispatchers.IO) {
             try {
                 val response = client.newCall(request).await()
-                response.use { parseResponse(it, config, repository, currentVersion) }
+                response.use { parseResponse(it, currentVersion) }
             } catch (e: UpdateException) {
                 throw e
             } catch (e: UnknownHostException) {
@@ -106,20 +72,15 @@ class UpdateChecker {
         }
     }
 
-    private fun parseResponse(
-        response: Response,
-        config: UpdateConfig,
-        repository: String,
-        currentVersion: String
-    ): UpdateResult {
+    private fun parseResponse(response: Response, currentVersion: String): UpdateResult {
         val body = response.body?.string().orEmpty()
         if (!response.isSuccessful) {
             val detail = runCatching {
                 JSONObject(body).optString("message")
             }.getOrNull()?.takeIf { it.isNotBlank() }
             val hint = when (response.code) {
-                401, 403 -> "仓库不可访问，或接口触发了频率限制。"
-                404 -> "没有找到这个仓库的 Release，请检查 owner/repo 是否正确、仓库是否公开。"
+                401, 403 -> "更新接口暂时不可用，或触发了频率限制。"
+                404 -> "还没有找到发布版本，请稍后再试。"
                 429 -> "请求太频繁，请稍后再试。"
                 in 500..599 -> "更新服务器暂时不可用（HTTP " + response.code + "）。"
                 else -> "检查更新失败（HTTP " + response.code + "）。"
@@ -136,11 +97,10 @@ class UpdateChecker {
         val versionLabel = tag.trim()
         val notes = json.optString("body").trim()
         val htmlUrl = json.optString("html_url").trim()
-        val releaseUrl = when {
-            htmlUrl.startsWith("https://") -> htmlUrl
-            config.provider == UpdateProvider.GITHUB ->
-                "https://github.com/" + repository + "/releases/tag/" + tag
-            else -> "https://gitee.com/" + repository + "/releases/tag/" + tag
+        val releaseUrl = if (htmlUrl.startsWith("https://")) {
+            htmlUrl
+        } else {
+            "https://github.com/" + REPOSITORY + "/releases/tag/" + tag
         }
 
         val apkUrl = findApkUrl(json.optJSONArray("assets"))
@@ -190,6 +150,10 @@ class UpdateChecker {
             .mapNotNull { it.value.toIntOrNull() }
             .take(4)
             .toList()
+
+    companion object {
+        const val REPOSITORY = "muli520/answer-book"
+    }
 }
 
 private suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->

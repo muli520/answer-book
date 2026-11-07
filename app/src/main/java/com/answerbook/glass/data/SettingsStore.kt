@@ -27,9 +27,6 @@ class SettingsStore(context: Context) {
     var config: LlmConfig by mutableStateOf(read())
         private set
 
-    var updateConfig: UpdateConfig by mutableStateOf(readUpdate())
-        private set
-
     fun save(baseUrl: String, model: String, apiKey: String) {
         val next = LlmConfig(
             baseUrl = baseUrl.trim().trimEnd('/'),
@@ -49,18 +46,6 @@ class SettingsStore(context: Context) {
         config = config.copy(apiKey = "")
     }
 
-    fun saveUpdate(provider: UpdateProvider, repository: String) {
-        val next = UpdateConfig(
-            provider = provider,
-            repository = repository.trim().trim('/')
-        )
-        preferences.edit()
-            .putString(KEY_UPDATE_PROVIDER, next.provider.name)
-            .putString(KEY_UPDATE_REPO, next.repository)
-            .apply()
-        updateConfig = next
-    }
-
     private fun read(): LlmConfig = LlmConfig(
         baseUrl = preferences.getString(KEY_BASE_URL, LlmConfig.DEFAULT_BASE_URL)
             ?: LlmConfig.DEFAULT_BASE_URL,
@@ -69,22 +54,10 @@ class SettingsStore(context: Context) {
         apiKey = preferences.getString(KEY_API_KEY, "") ?: ""
     )
 
-    private fun readUpdate(): UpdateConfig {
-        val provider = runCatching {
-            UpdateProvider.valueOf(preferences.getString(KEY_UPDATE_PROVIDER, "") ?: "")
-        }.getOrDefault(UpdateProvider.GITHUB)
-        return UpdateConfig(
-            provider = provider,
-            repository = preferences.getString(KEY_UPDATE_REPO, "") ?: ""
-        )
-    }
-
     private companion object {
         const val PREFS_NAME = "answer_book_settings"
         const val KEY_BASE_URL = "llm_base_url"
         const val KEY_MODEL = "llm_model"
         const val KEY_API_KEY = "llm_api_key"
-        const val KEY_UPDATE_PROVIDER = "update_provider"
-        const val KEY_UPDATE_REPO = "update_repo"
     }
 }

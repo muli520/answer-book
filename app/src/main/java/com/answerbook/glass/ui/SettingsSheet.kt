@@ -46,10 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.answerbook.glass.data.LlmConfig
 import com.answerbook.glass.data.UpdateChecker
-import com.answerbook.glass.data.UpdateConfig
 import com.answerbook.glass.data.UpdateException
 import com.answerbook.glass.data.UpdateInfo
-import com.answerbook.glass.data.UpdateProvider
 import com.answerbook.glass.data.UpdateResult
 import com.answerbook.glass.ui.components.BookGlyph
 import com.answerbook.glass.ui.components.BookIcon
@@ -69,12 +67,10 @@ import kotlinx.coroutines.launch
 fun SettingsSheet(
     visible: Boolean,
     config: LlmConfig,
-    updateConfig: UpdateConfig,
     currentVersion: String,
     backdrop: Backdrop,
     onDismiss: () -> Unit,
     onSave: (baseUrl: String, model: String, apiKey: String) -> Unit,
-    onSaveUpdate: (UpdateProvider, String) -> Unit,
     onClearKey: () -> Unit
 ) {
     var baseUrl by remember(visible) { mutableStateOf(config.baseUrl) }
@@ -83,8 +79,6 @@ fun SettingsSheet(
     var showKey by remember(visible) { mutableStateOf(false) }
     var error by remember(visible) { mutableStateOf<String?>(null) }
 
-    var updateProvider by remember(visible) { mutableStateOf(updateConfig.provider) }
-    var updateRepo by remember(visible) { mutableStateOf(updateConfig.repository) }
     var checkingUpdate by remember(visible) { mutableStateOf(false) }
     var updateInfo by remember(visible) { mutableStateOf<UpdateInfo?>(null) }
     var updateStatus by remember(visible) { mutableStateOf<String?>(null) }
@@ -342,50 +336,13 @@ fun SettingsSheet(
                     }
                     Spacer(Modifier.height(7.dp))
                     BookText(
-                        text = "从公开仓库的 Latest Release 检查更新，只打开下载页，不自动安装。",
+                        text = "从内置的 GitHub 仓库检查最新 Release，只打开下载页，不自动安装。",
                         style = BookType.Small,
                         color = BookColors.Muted,
                         maxLines = 2
                     )
 
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        UpdateProvider.entries.forEach { provider ->
-                            GlassChip(
-                                text = provider.label,
-                                backdrop = backdrop,
-                                onClick = {
-                                    updateProvider = provider
-                                    updateInfo = null
-                                    updateStatus = null
-                                    updateStatusError = false
-                                    onSaveUpdate(provider, updateRepo)
-                                },
-                                leadingIcon = if (updateProvider == provider) BookIcon.Check else null,
-                                tint = if (updateProvider == provider) BookColors.Gold else BookColors.Muted
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-                    GlassTextField(
-                        value = updateRepo,
-                        onValueChange = {
-                            updateRepo = it
-                            updateInfo = null
-                            updateStatus = null
-                            updateStatusError = false
-                        },
-                        placeholder = "owner/repo，例如 your-name/answer-book",
-                        backdrop = backdrop,
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Uri,
-                            imeAction = ImeAction.Next
-                        )
-                    )
-
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(14.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -397,39 +354,30 @@ fun SettingsSheet(
                                 null
                             } else {
                                 {
-                                    val cleanRepo = updateRepo.trim().trim('/')
-                                    onSaveUpdate(updateProvider, cleanRepo)
-                                    val checkConfig = UpdateConfig(updateProvider, cleanRepo)
-                                    if (!checkConfig.isConfigured) {
-                                        updateInfo = null
-                                        updateStatusError = true
-                                        updateStatus = "请填写 owner/repo，例如 your-name/answer-book。"
-                                    } else {
-                                        checkingUpdate = true
-                                        updateInfo = null
-                                        updateStatus = null
-                                        updateStatusError = false
-                                        scope.launch {
-                                            try {
-                                                when (val result = updateChecker.check(checkConfig, currentVersion)) {
-                                                    is UpdateResult.Available -> {
-                                                        updateInfo = result.info
-                                                    }
-
-                                                    is UpdateResult.UpToDate -> {
-                                                        updateStatusError = false
-                                                        updateStatus = "已是最新版本 " + result.latestVersion
-                                                    }
+                                    checkingUpdate = true
+                                    updateInfo = null
+                                    updateStatus = null
+                                    updateStatusError = false
+                                    scope.launch {
+                                        try {
+                                            when (val result = updateChecker.check(currentVersion)) {
+                                                is UpdateResult.Available -> {
+                                                    updateInfo = result.info
                                                 }
-                                            } catch (e: UpdateException) {
-                                                updateStatusError = true
-                                                updateStatus = e.message ?: "检查更新失败。"
-                                            } catch (e: Exception) {
-                                                updateStatusError = true
-                                                updateStatus = "检查更新失败，请稍后再试。"
-                                            } finally {
-                                                checkingUpdate = false
+
+                                                is UpdateResult.UpToDate -> {
+                                                    updateStatusError = false
+                                                    updateStatus = "已是最新版本 " + result.latestVersion
+                                                }
                                             }
+                                        } catch (e: UpdateException) {
+                                            updateStatusError = true
+                                            updateStatus = e.message ?: "检查更新失败。"
+                                        } catch (e: Exception) {
+                                            updateStatusError = true
+                                            updateStatus = "检查更新失败，请稍后再试。"
+                                        } finally {
+                                            checkingUpdate = false
                                         }
                                     }
                                 }
@@ -508,7 +456,6 @@ fun SettingsSheet(
                     LiquidButton(
                         label = "保存并返回",
                         onClick = {
-                            onSaveUpdate(updateProvider, updateRepo)
                             val cleanUrl = baseUrl.trim().trimEnd('/')
                             val cleanModel = model.trim()
                             val cleanKey = apiKey.trim()

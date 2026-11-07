@@ -62,20 +62,19 @@
 
 ## 检查更新
 
-设置页的「应用更新」区域支持从公开仓库检查新版本：
+设置页的「应用更新」区域只有一个「检查更新」按钮；检查地址已内置，不需要填写仓库：
 
-1. 选择 **GitHub** 或 **Gitee**
-2. 填写仓库的 `owner/repo`，例如 `your-name/answer-book`
-3. 点「检查更新」
+```text
+GitHub: muli520/answer-book
+```
 
 实现方式：
 
-- GitHub 使用 `https://api.github.com/repos/{owner}/{repo}/releases/latest`
-- Gitee 使用 `https://gitee.com/api/v5/repos/{owner}/{repo}/releases/latest`
+- 使用 `https://api.github.com/repos/muli520/answer-book/releases/latest`
 - 读取 Latest Release 的 `tag_name` 与 APK 资产；有 APK 时显示「下载 APK」，否则打开 Release 页面
-- 版本比较使用数字段，例如 `v1.2.0` 与当前 `1.2.0`
+- 版本比较使用数字段，例如 `v1.2.1` 与当前 `1.2.1`
 - 只打开浏览器下载页，不自动下载、不自动安装
-- 不需要 Token；公开仓库即可，GitHub 接口有未登录频率限制
+- 不需要 Token；GitHub 未登录接口有频率限制
 
 检查结果只在当前设置页内展示，不会上传任何问题或 API Key。
 
@@ -138,30 +137,30 @@
 
 ## 发布 APK
 
-APK 不提交到 Git 仓库，而是作为 **GitHub / Gitee Release 的附件**发布。`dist/` 已加入 `.gitignore`。
+APK 不提交到 Git 仓库，而是作为 **GitHub Release 的附件**发布。`dist/` 已加入 `.gitignore`。
 
 本地构建产物（用于本机安装）：
 
 ```
-dist/答案之书-v1.2.0.apk
+dist/答案之书-v1.2.1.apk
 dist/SHA256.txt
 ```
 
 ```bash
-adb install -r "dist/答案之书-v1.2.0.apk"
+adb install -r "dist/答案之书-v1.2.1.apk"
 ```
 
 SHA-256：
 
 ```
-46326ebca3f23fa78b427060aebaca26b7119d2bae5a835663aca75a1ad0fada
+de0b776a0214eea99655635c61e299124bf9f40cfb91660f715b3ca27ec3b202
 ```
 
 发布新版本时：
 
 1. 修改 `app/build.gradle.kts` 里的 `versionCode` 和 `versionName`
 2. 执行 `.\gradlew.bat :app:assembleRelease`
-3. 在 GitHub/Gitee 创建 Release，tag 使用 `v1.2.1` 这类格式
+3. 在 GitHub 创建 Release，tag 使用 `v1.2.1` 这类格式
 4. 把 `app-release.apk` 上传到该 Release 的附件
 5. 发布后，App 里的「检查更新」就能读取到它
 
@@ -297,7 +296,7 @@ app/src/main/java/com/answerbook/glass/
 │   ├── SafetyGuard.kt       # 本地敏感问题判定
 │   ├── LlmClient.kt         # OpenAI 兼容单轮客户端
 │   ├── LlmPrompt.kt         # 四套书灵提示词
-│   ├── UpdateChecker.kt     # GitHub / Gitee 更新检查
+│   ├── UpdateChecker.kt     # 内置 GitHub 更新检查
 │   └── SettingsStore.kt     # 本地配置与更新源
 └── ui/
     ├── AnswerBookApp.kt     # 主界面、读心/问书
