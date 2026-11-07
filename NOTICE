@@ -1,0 +1,26 @@
+答案之书
+Copyright 2026 答案之书 contributors
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+This product includes software developed by third parties:
+
+- Backdrop (AndroidLiquidGlass), Copyright Kyant, Apache License 2.0
+  https://github.com/Kyant0/AndroidLiquidGlass
+
+- Kyant Shapes, Copyright Kyant, Apache License 2.0
+  https://github.com/Kyant0/AndroidLiquidGlass
+
+- AndroidX / Jetpack Compose, Copyright The Android Open Source Project,
+  Apache License 2.0
+  https://developer.android.com/jetpack/androidx
+
+- OkHttp, Copyright Square, Inc., Apache License 2.0
+  https://square.github.io/okhttp/
+
+- Kotlin and kotlinx.coroutines, Copyright JetBrains s.r.o.,
+  Apache License 2.0
+  https://kotlinlang.org/
+
+Full dependency versions are listed in app/build.gradle.kts.
