@@ -8,10 +8,6 @@
 | --- | --- |
 | ![读心封面](docs/home.webp) | ![读心答案](docs/answer.webp) |
 
-| 问书 | 连接大模型 |
-| --- | --- |
-| ![问书](docs/ask.webp) | ![设置](docs/settings.webp) |
-
 ## 两个模式
 
 ### 读心
@@ -266,7 +262,7 @@ OpenAI：
 - [NOTICE](NOTICE)：版权与第三方组件说明
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)：依赖与许可证清单
 
-当前已生成的 release keystore 放在 `keys/answerbook-release.jks`，`keystore.properties` 指向它；两者都在 `.gitignore` 中，不要提交。
+如果你使用自己的 release keystore，请把 keystore 与 `keystore.properties` 保存在仓库外或本地忽略目录；两者都不会被 Git 跟踪。
 
 主要第三方组件：
 
@@ -301,7 +297,7 @@ app/src/main/java/com/answerbook/glass/
 │   ├── LlmClient.kt         # OpenAI 兼容单轮客户端
 │   ├── LlmPrompt.kt         # 四套书灵提示词
 │   ├── UpdateChecker.kt     # Gitee 优先、GitHub 回退
-│   └── SettingsStore.kt     # 本地配置与更新源
+│   └── SettingsStore.kt     # 本地配置
 └── ui/
     ├── AnswerBookApp.kt     # 主界面、读心/问书
     ├── DreamBackground.kt   # 极光与星尘背景
