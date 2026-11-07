@@ -336,7 +336,7 @@ fun SettingsSheet(
                     }
                     Spacer(Modifier.height(7.dp))
                     BookText(
-                        text = "从内置的 GitHub 仓库检查最新 Release，只打开下载页，不自动安装。",
+                        text = "优先从 Gitee 镜像检查最新 Release，失败自动回退 GitHub；只打开下载页，不自动安装。",
                         style = BookType.Small,
                         color = BookColors.Muted,
                         maxLines = 2

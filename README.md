@@ -65,16 +65,19 @@
 设置页的「应用更新」区域只有一个「检查更新」按钮；检查地址已内置，不需要填写仓库：
 
 ```text
-GitHub: muli520/answer-book
+Gitee:  muli520/answer-book   （优先）
+GitHub: muli520/answer-book   （回退）
 ```
 
 实现方式：
 
-- 使用 `https://api.github.com/repos/muli520/answer-book/releases/latest`
+- 先请求 `https://gitee.com/api/v5/repos/muli520/answer-book/releases/latest`
+- Gitee 5 秒内没有结果或没有 Release，自动回退：
+  `https://api.github.com/repos/muli520/answer-book/releases/latest`
 - 读取 Latest Release 的 `tag_name` 与 APK 资产；有 APK 时显示「下载 APK」，否则打开 Release 页面
-- 版本比较使用数字段，例如 `v1.2.1` 与当前 `1.2.1`
+- 版本比较使用数字段，例如 `v1.2.2` 与当前 `1.2.2`
 - 只打开浏览器下载页，不自动下载、不自动安装
-- 不需要 Token；GitHub 未登录接口有频率限制
+- 不需要 Token；公开仓库即可，GitHub 未登录接口有频率限制
 
 检查结果只在当前设置页内展示，不会上传任何问题或 API Key。
 
@@ -137,32 +140,33 @@ GitHub: muli520/answer-book
 
 ## 发布 APK
 
-APK 不提交到 Git 仓库，而是作为 **GitHub Release 的附件**发布。`dist/` 已加入 `.gitignore`。
+APK 不提交到 Git 仓库，而是作为 **GitHub Release 和 Gitee 发行版的附件**发布。`dist/` 已加入 `.gitignore`。
 
 本地构建产物（用于本机安装）：
 
 ```
-dist/答案之书-v1.2.1.apk
+dist/答案之书-v1.2.2.apk
 dist/SHA256.txt
 ```
 
 ```bash
-adb install -r "dist/答案之书-v1.2.1.apk"
+adb install -r "dist/答案之书-v1.2.2.apk"
 ```
 
 SHA-256：
 
 ```
-de0b776a0214eea99655635c61e299124bf9f40cfb91660f715b3ca27ec3b202
+5b4a3f58f9595e73a6e7e59f5d128a66bc98f44bea2f5c70e7249b64d7a30755
 ```
 
 发布新版本时：
 
 1. 修改 `app/build.gradle.kts` 里的 `versionCode` 和 `versionName`
 2. 执行 `.\gradlew.bat :app:assembleRelease`
-3. 在 GitHub 创建 Release，tag 使用 `v1.2.1` 这类格式
+3. 在 GitHub 创建 Release，tag 使用 `v1.2.2` 这类格式
 4. 把 `app-release.apk` 上传到该 Release 的附件
-5. 发布后，App 里的「检查更新」就能读取到它
+5. 在 Gitee 创建**同名 tag** 的发行版，上传同一个 APK
+6. 发布后，App 会优先检查 Gitee，失败再回退 GitHub
 
 ## 构建
 
@@ -296,7 +300,7 @@ app/src/main/java/com/answerbook/glass/
 │   ├── SafetyGuard.kt       # 本地敏感问题判定
 │   ├── LlmClient.kt         # OpenAI 兼容单轮客户端
 │   ├── LlmPrompt.kt         # 四套书灵提示词
-│   ├── UpdateChecker.kt     # 内置 GitHub 更新检查
+│   ├── UpdateChecker.kt     # Gitee 优先、GitHub 回退
 │   └── SettingsStore.kt     # 本地配置与更新源
 └── ui/
     ├── AnswerBookApp.kt     # 主界面、读心/问书
